@@ -2,7 +2,7 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 import numpy as np
 import matplotlib.pyplot as plt
-from draggable_charts import scatter_chart
+from streamlit_drawable_canvas import st_canvas
 
 # === إعداد الصفحة ===
 st.set_page_config(page_title="MathPlay | الرياضيات بين اللعب والتفاعل", layout="wide")
@@ -98,64 +98,76 @@ elif selected == "📌 مركز الأبعاد المتجانس":
 # لعبة
 
 elif selected == "لعبة السحب والافلات":
-    st.set_page_config(page_title="لعبة اسحب الكتل وحسب G", layout="wide")
-    st.title("🎮 اللعبة: اسحب الكتل واحسب مركز الأبعاد")
+    st.set_page_config(page_title="🎮 لعبة اسحب الكتل وحسب G", layout="wide")
+    st.title("🎮 اسحب الكتل على الرسم واظهر مركز الأبعاد")
 
     st.markdown("""
     <div dir="rtl" style="text-align: right;">
-    🎯 **التعليمات:** اسحب النقاط في الرسم، ثم اضغط على "احسب G" لعرض الموضع الصحيح.
+    ✅ اسحب النقاط داخل الرسم (Canvas)، ثم اضغط على: احسب G.
     </div>
     """, unsafe_allow_html=True)
 
-    # إعداد البيانات الأولية
+    # إعداد النقاط الافتراضية
     n = st.slider("عدد الكتل", 2, 6, 3)
-    positions = np.zeros((n, 2))
-    masses = []
+    positions = np.column_stack((np.linspace(50, 350, n), np.linspace(50, 350, n)))  # canvas pixel coords
 
-    # توليد بيانات قابلة للسحب
-    x0 = list(range(n))
-    y0 = [i*1.5 for i in range(n)]
-    mass_defaults = [1.0]*n
+    # canvas setup
+    canvas_result = st_canvas(
+        fill_color="rgba(255, 0, 0, 0.1)",
+        stroke_width=3,
+        stroke_color="#000",
+        background_color="#eee",
+        width=400,
+        height=400,
+        initial_drawing={
+            "version": "4.4.0",
+            "objects": [{
+                "type": "circle",
+                "left": int(positions[i,0]),
+                "top": int(positions[i,1]),
+                "radius": 10,
+                "fill": "blue"
+            } for i in range(n)]
+        },
+        drawing_mode="point",
+        key="canvas"
+    )
 
-    # إنشاء scatter draggable
-    data = {"trace": {"x": x0, "y": y0}}
-    new_data = scatter_chart(data=data, options={"point_radius": 10}, key="dragpoints")
+    # قراءة المواضع بعد السحب
+    if canvas_result.json_data:
+        objs = canvas_result.json_data["objects"]
+        positions = np.array([[obj["left"], obj["top"]] for obj in objs])
 
-    # تحويل النتائج
-    for i in range(n):
-        positions[i, 0] = new_data["trace"]["x"][i]
-        positions[i, 1] = new_data["trace"]["y"][i]
-
-    # الكتل كإدخال
-    for i in range(n):
-        m = st.number_input(f"⚖️ كتلة P{i+1}", min_value=0.1, value=mass_defaults[i], key=f"m_{i}")
-        masses.append(m)
-
+    # إدخال الكتل
+    masses = [st.number_input(f"⚖️ كتلة P{i+1}", min_value=0.1, value=1.0, step=0.1, key=f"m_{i}") for i in range(n)]
     masses = np.array(masses)
 
-    # حساب مركز الأبعاد
     def barycentre(pts, m):
-        return np.sum(pts.T * m, axis=1) / np.sum(m)
+        pts_norm = pts / 100  # نحول من بيكسل إلى نظام إحداثيات عادي
+        return np.sum(pts_norm.T * m, axis=1) / np.sum(m)
 
+    # حساب مركز الأبعاد ورسمه
     if st.button("🎯 احسب G"):
         G = barycentre(positions, masses)
 
         fig, ax = plt.subplots(figsize=(6, 6))
-        ax.scatter(positions[:, 0], positions[:, 1], s=100)
-        for i, (x, y) in enumerate(positions):
-            ax.text(x + 0.2, y + 0.2, f"P{i+1} (m={masses[i]})", fontsize=9)
+        ax.scatter(positions[:,0], positions[:,1], s=100, c="blue")
+        for i,(x,y) in enumerate(positions):
+            ax.text(x+5, y+5, f"P{i+1}(m={masses[i]})", fontsize=9)
 
-        ax.scatter(G[0], G[1], color="red", s=150, marker="X")
-        ax.text(G[0] + 0.3, G[1], "G", fontsize=12, color="red")
+        # رسم مركز الأبعاد
+        Gpix = G * 100
+        ax.scatter(Gpix[0], Gpix[1], c="red", s=150, marker="X")
+        ax.text(Gpix[0]+5, Gpix[1], "G", color="red", fontsize=12)
 
-        ax.set_title("موقع مركز الأبعاد G")
-        ax.set_xlim(min(positions[:, 0]) - 5, max(positions[:, 0]) + 5)
-        ax.set_ylim(min(positions[:, 1]) - 5, max(positions[:, 1]) + 5)
-        ax.set_aspect('equal')
+        ax.set_title("موقع G حسب سحب النقاط")
+        ax.set_xlim(0,400); ax.set_ylim(0,400)
+        ax.set_aspect('equal'); ax.invert_yaxis()
         ax.grid(True)
         st.pyplot(fig)
 
-        st.success(f"📍 G = ({round(G[0],2)}, {round(G[1],2)})")
+        st.success(f"📍 G ≈ ({round(G[0],2)}, {round(G[1],2)}) [في نظام الإحداثيات]")
+
 # === 3. اختبر فهمك ===
 elif selected == "🧪 اختبر فهمك":
     st.title("🧠 اختبار تفاعلي: هل فهمت مفهوم مركز الأبعاد؟")
