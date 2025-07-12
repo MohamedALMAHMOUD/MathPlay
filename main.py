@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 import numpy as np
 import matplotlib.pyplot as plt
+from draggable_charts import scatter_chart
 
 # === إعداد الصفحة ===
 st.set_page_config(page_title="MathPlay | الرياضيات بين اللعب والتفاعل", layout="wide")
@@ -94,7 +95,67 @@ elif selected == "📌 مركز الأبعاد المتجانس":
     ax.set_aspect('equal')
     ax.grid(True)
     st.pyplot(fig)
+# لعبة
 
+elif selected == "لعبة السحب والافلات":
+    st.set_page_config(page_title="لعبة اسحب الكتل وحسب G", layout="wide")
+    st.title("🎮 اللعبة: اسحب الكتل واحسب مركز الأبعاد")
+
+    st.markdown("""
+    <div dir="rtl" style="text-align: right;">
+    🎯 **التعليمات:** اسحب النقاط في الرسم، ثم اضغط على "احسب G" لعرض الموضع الصحيح.
+    </div>
+    """, unsafe_allow_html=True)
+
+    # إعداد البيانات الأولية
+    n = st.slider("عدد الكتل", 2, 6, 3)
+    positions = np.zeros((n, 2))
+    masses = []
+
+    # توليد بيانات قابلة للسحب
+    x0 = list(range(n))
+    y0 = [i*1.5 for i in range(n)]
+    mass_defaults = [1.0]*n
+
+    # إنشاء scatter draggable
+    data = {"trace": {"x": x0, "y": y0}}
+    new_data = scatter_chart(data=data, options={"point_radius": 10}, key="dragpoints")
+
+    # تحويل النتائج
+    for i in range(n):
+        positions[i, 0] = new_data["trace"]["x"][i]
+        positions[i, 1] = new_data["trace"]["y"][i]
+
+    # الكتل كإدخال
+    for i in range(n):
+        m = st.number_input(f"⚖️ كتلة P{i+1}", min_value=0.1, value=mass_defaults[i], key=f"m_{i}")
+        masses.append(m)
+
+    masses = np.array(masses)
+
+    # حساب مركز الأبعاد
+    def barycentre(pts, m):
+        return np.sum(pts.T * m, axis=1) / np.sum(m)
+
+    if st.button("🎯 احسب G"):
+        G = barycentre(positions, masses)
+
+        fig, ax = plt.subplots(figsize=(6, 6))
+        ax.scatter(positions[:, 0], positions[:, 1], s=100)
+        for i, (x, y) in enumerate(positions):
+            ax.text(x + 0.2, y + 0.2, f"P{i+1} (m={masses[i]})", fontsize=9)
+
+        ax.scatter(G[0], G[1], color="red", s=150, marker="X")
+        ax.text(G[0] + 0.3, G[1], "G", fontsize=12, color="red")
+
+        ax.set_title("موقع مركز الأبعاد G")
+        ax.set_xlim(min(positions[:, 0]) - 5, max(positions[:, 0]) + 5)
+        ax.set_ylim(min(positions[:, 1]) - 5, max(positions[:, 1]) + 5)
+        ax.set_aspect('equal')
+        ax.grid(True)
+        st.pyplot(fig)
+
+        st.success(f"📍 G = ({round(G[0],2)}, {round(G[1],2)})")
 # === 3. اختبر فهمك ===
 elif selected == "🧪 اختبر فهمك":
     st.title("🧠 اختبار تفاعلي: هل فهمت مفهوم مركز الأبعاد؟")
