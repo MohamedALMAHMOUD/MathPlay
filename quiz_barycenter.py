@@ -1,5 +1,7 @@
 import streamlit as st
 
+st.set_page_config(page_title="🎮 اختبر مهاراتك", layout="wide")
+
 st.title("🧠 اختبار تفاعلي: هل فهمت مفهوم مركز الأبعاد؟")
 score = 0
 
