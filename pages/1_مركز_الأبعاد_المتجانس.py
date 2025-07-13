@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="مركز الأبعاد المتجانس", layout="centered")
+st.set_page_config(page_title="مركز الأبعاد المتجانس", layout="wide")
 
 st.title("📌 محاكي لحساب مركز الأبعاد المتجانس")
 st.markdown("تغيير القيم سيغير مكان مركز الأبعاد المتجانس.")
