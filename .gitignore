@@ -150,3 +150,6 @@ wp-config.php
 *.swp
 *.swo
 *.swn
+
+### Dev container
+.devcontainer/
