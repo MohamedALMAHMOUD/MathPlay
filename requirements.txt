@@ -13,3 +13,4 @@ numba
 torch
 torchvision
 openai
+moviepy
