@@ -89,7 +89,7 @@ if st.button("🎬 اطرح سؤالك"):
     else:
         with st.spinner("🛠️ الجواب..."):
             video_path, reformulated = generate_video(text_input)
-            if "\\frac" in reformulated or "\\" in reformulated:
+            if "\frac" in reformulated or "\\" in reformulated:
                 st.markdown("**🧮 Reformulation mathématique (LaTeX)**")
                 st.latex(reformulated)
             else: st.markdown(f"**🔁 الجواب كتابة :** {reformulated}")
