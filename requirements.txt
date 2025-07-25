@@ -13,4 +13,4 @@ numba
 torch
 torchvision
 openai
-moviepy
+moviepy==1.0.3
